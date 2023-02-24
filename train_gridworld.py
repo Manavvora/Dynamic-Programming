@@ -61,23 +61,24 @@ def main():
     print(V1)
     print("------------------------")
     print(pi1)
-    # sp = env.reset()
-    # log['s'].append(sp)
-    # done = False
-    # while not done:
-    #     a = pi1[sp]
-    #     (sp, rp, done) = env.step(a)
-    #     log['t'].append(log['t'][-1] + 1)
-    #     log['s'].append(sp)
-    #     log['a'].append(a)
-    #     log['r'].append(rp)
+    print(np.argmax(pi1,axis=1))
+    sp = env.reset()
+    log['s'].append(sp)
+    done = False
+    while not done:
+        a = np.argmax(pi1[sp])
+        (sp, rp, done) = env.step(a)
+        log['t'].append(log['t'][-1] + 1)
+        log['s'].append(sp)
+        log['a'].append(a)
+        log['r'].append(rp)
 
     # # Plot data and save to png file
-    # # plt.plot(log['t'], log['s'])
-    # #plt.plot(log['t'][:-1], log['a'])
-    plt.plot(log['iters'], log['V'])
-    # # plt.plot(log['t'][:-1], log['r'])
-    # plt.legend(['s', 'a', 'V', 'r'])
+    plt.plot(log['t'], log['s'])
+    plt.plot(log['t'][:-1], log['a'])
+    # plt.plot(log['iters'], log['V'])
+    plt.plot(log['t'][:-1], log['r'])
+    plt.legend(['s', 'a', 'r'])
     plt.show()
 
 if __name__ == '__main__':
