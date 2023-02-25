@@ -115,7 +115,7 @@ def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
         's': [],
         'a': [],
         'r': [],
-        'Q': [],
+        'V': [],
         'episodes': []
     }
         a = epsilon_greedy(Q[s],epsilon)
@@ -127,37 +127,42 @@ def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
             s = s_new
             a = a_new
         pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
-        log['Q'].append(np.mean(Q))
+        log['V'].append(np.mean(np.max(Q,axis=1)))
         log['episodes'].append(episode)
     return Q, pi, log
         
 
-def TD_0(pi, alpha):
+def TD_0(pi, alpha, num_episodes = 1000):
     num_states = 25
     V = np.zeros(num_states)
+    gamma = 0.95
     done = False
     log = {
         't': [0],
-        's': [s],
+        's': [],
         'a': [],
         'r': [],
         'V': [],
         'iters': []
     }
-    while not done:
+    for episode in range(num_episodes):
         s = env.reset()
-        a = np.argmax(pi[s])
-        (s_new,r,done) = env.step(a)
-        V[s] += alpha*(r + gamma*V[s_new]-V[s])
-        s = s_new
+        while not done:
+            a = np.argmax(pi[s])
+            (s_new,r,done) = env.step(a)
+            V[s] += alpha*(r + gamma*V[s_new]-V[s])
+            s = s_new
+    return V
 
 def main():    
     #V1, pi1, log = policy_iteration()
     # V1, pi1, log = value_iteration()
     Q1,pi1,log = SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000)
-    print(Q1)
+    V1 = np.max(Q1,axis=1)
+    print(V1)
     print("------------------------")
-    print(pi1)
+    V2 = TD_0(pi1,alpha=0.5,num_episodes=1000)
+    print(V2)
     print(np.argmax(pi1,axis=1))
     sp = env.reset()
     log['s'].append(sp)
@@ -173,7 +178,7 @@ def main():
     # # Plot data and save to png file
     # plt.plot(log['t'], log['s'])
     # plt.plot(log['t'][:-1], log['a'])
-    plt.plot(log['episodes'], log['Q'])
+    plt.plot(log['episodes'], log['V'])
     # plt.plot(log['t'][:-1], log['r'])
     # plt.legend(['s', 'a', 'r'])
     plt.show()
