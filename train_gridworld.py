@@ -95,10 +95,67 @@ def value_iteration():
         log['iters'].append(iters)
     return V,pi,log
 
+def epsilon_greedy(Q_state,epsilon):
+    if random.uniform(0,1) < epsilon:
+        action = random.randint(0,len(Q_state)-1)
+    else:
+        action = np.argmax(Q_state)
+    return action
+
+def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
+    num_states = 25
+    num_actions = 4
+    gamma = 0.95
+    Q = np.zeros((num_states,num_actions))
+    pi = np.zeros((num_states,num_actions))
+    for episode in range(num_epsiodes):
+        s = env.reset()
+        log = {
+        't': [0],
+        's': [],
+        'a': [],
+        'r': [],
+        'Q': [],
+        'episodes': []
+    }
+        a = epsilon_greedy(Q[s],epsilon)
+        done = False
+        while not done:
+            (s_new,r,done) = env.step(a)
+            a_new = epsilon_greedy(Q[s_new],epsilon)
+            Q[s,a] += alpha*(r + gamma*Q[s_new,a_new] - Q[s,a])
+            s = s_new
+            a = a_new
+        pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
+        log['Q'].append(np.mean(Q))
+        log['episodes'].append(episode)
+    return Q, pi, log
+        
+
+def TD_0(pi, alpha):
+    num_states = 25
+    V = np.zeros(num_states)
+    done = False
+    log = {
+        't': [0],
+        's': [s],
+        'a': [],
+        'r': [],
+        'V': [],
+        'iters': []
+    }
+    while not done:
+        s = env.reset()
+        a = np.argmax(pi[s])
+        (s_new,r,done) = env.step(a)
+        V[s] += alpha*(r + gamma*V[s_new]-V[s])
+        s = s_new
+
 def main():    
     #V1, pi1, log = policy_iteration()
-    V1, pi1, log = value_iteration()
-    print(V1)
+    # V1, pi1, log = value_iteration()
+    Q1,pi1,log = SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000)
+    print(Q1)
     print("------------------------")
     print(pi1)
     print(np.argmax(pi1,axis=1))
@@ -116,7 +173,7 @@ def main():
     # # Plot data and save to png file
     # plt.plot(log['t'], log['s'])
     # plt.plot(log['t'][:-1], log['a'])
-    plt.plot(log['iters'], log['V'])
+    plt.plot(log['episodes'], log['Q'])
     # plt.plot(log['t'][:-1], log['r'])
     # plt.legend(['s', 'a', 'r'])
     plt.show()
