@@ -56,8 +56,48 @@ def policy_iteration():
         if policy_stable:
             return V, pi, log
 
+
+def value_iteration():
+    num_states = 25
+    num_actions = 4
+    V = np.zeros(num_states)
+    V_temp = np.zeros(num_actions)
+    pi = np.ones([num_states,num_actions])/num_actions
+    # pi_new = np.zeros(num_states)
+    theta = 1e-6
+    gamma = 0.95
+    delta = 1
+    iters = 0
+    log = {
+        't': [0],
+        's': [],
+        'a': [],
+        'r': [],
+        'V': [],
+        'iters': []
+    }
+    while delta > theta:
+        delta = 0
+        iters += 1
+        print("New iteration")
+        for s in range(num_states):
+            v = V[s]
+            V_temp = np.zeros(num_actions)
+            for a in range(num_actions):
+                for s_new in range(num_states):
+                    V_temp[a] +=  env.p(s_new,s,a)*(env.r(s,a) + gamma*V[s_new])
+            V[s] = np.max(V_temp)
+            pi[s] = np.eye(num_actions)[np.argmax(V_temp)]
+            delta = max(delta, np.abs(v-V[s]))
+            print(delta)
+        print('------------')
+        log['V'].append(np.mean(V))
+        log['iters'].append(iters)
+    return V,pi,log
+
 def main():    
-    V1, pi1, log = policy_iteration()
+    #V1, pi1, log = policy_iteration()
+    V1, pi1, log = value_iteration()
     print(V1)
     print("------------------------")
     print(pi1)
@@ -74,11 +114,11 @@ def main():
         log['r'].append(rp)
 
     # # Plot data and save to png file
-    plt.plot(log['t'], log['s'])
-    plt.plot(log['t'][:-1], log['a'])
-    # plt.plot(log['iters'], log['V'])
-    plt.plot(log['t'][:-1], log['r'])
-    plt.legend(['s', 'a', 'r'])
+    # plt.plot(log['t'], log['s'])
+    # plt.plot(log['t'][:-1], log['a'])
+    plt.plot(log['iters'], log['V'])
+    # plt.plot(log['t'][:-1], log['r'])
+    # plt.legend(['s', 'a', 'r'])
     plt.show()
 
 if __name__ == '__main__':
