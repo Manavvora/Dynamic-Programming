@@ -107,7 +107,7 @@ def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
     num_actions = 4
     gamma = 0.95
     Q = np.zeros((num_states,num_actions))
-    pi = np.zeros((num_states,num_actions))
+    pi = np.ones((num_states,num_actions))/num_actions
     for episode in range(num_epsiodes):
         s = env.reset()
         log = {
@@ -136,7 +136,7 @@ def Q_Learning(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
     num_actions = 4
     gamma = 0.95
     Q = np.zeros((num_states,num_actions))
-    pi = np.zeros((num_states,num_actions))
+    pi = np.ones((num_states,num_actions))/num_actions
     for episode in range(num_epsiodes):
         s = env.reset()
         log = {
@@ -158,7 +158,7 @@ def Q_Learning(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
         log['episodes'].append(episode)
     return Q, pi, log
 
-def TD_0(pi, alpha, num_episodes = 1000):
+def TD_0(pi, alpha=0.5, num_episodes = 1000):
     num_states = 25
     V = np.zeros(num_states)
     gamma = 0.95
@@ -183,14 +183,19 @@ def TD_0(pi, alpha, num_episodes = 1000):
 def main():    
     #V1, pi1, log = policy_iteration()
     # V1, pi1, log = value_iteration()
-    Q1,pi1,log = SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000)
-    Q2,pi2,lo2 = SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000)
+    Q1,pi1,log = SARSA()
+    Q2,pi2,log2 = Q_Learning()
     V1 = np.max(Q1,axis=1)
     print(V1)
     print("------------------------")
     V2 = np.max(Q2,axis=1)
     print(V2)
+    V3 = TD_0(pi1)
+    print(V3)
+    V4 = TD_0(pi2)
+    print(V4)
     print(np.argmax(pi1,axis=1))
+    print(pi1)
     print(np.argmax(pi2,axis=1))
     sp = env.reset()
     log['s'].append(sp)
