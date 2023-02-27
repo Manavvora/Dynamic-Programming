@@ -7,7 +7,7 @@ env = GridWorld(hard_version=False)
 
 env.reset()
 
-def policy_iteration():
+def policy_iteration(verbose = True):
     num_states = 25
     num_actions = 4
     V = np.zeros(num_states)
@@ -30,7 +30,6 @@ def policy_iteration():
             # V = np.zeros(num_states)
             delta = 0
             iters += 1
-            print("New iteration")
             for s in range(num_states):
                 v = 0
                 for act,action_prob in enumerate(pi[s]):
@@ -38,8 +37,6 @@ def policy_iteration():
                         v += env.p(s_new,s,act)*action_prob*(env.r(s,act) + gamma*V[s_new])
                 delta = max(delta, np.abs(v-V[s]))
                 V[s] = v
-                print(delta)
-            print('------------')
         log['V'].append(np.mean(V))
         log['iters'].append(iters)
         policy_stable = True
@@ -54,10 +51,16 @@ def policy_iteration():
                 policy_stable = False
             pi[s] = np.eye(num_actions)[best_a]
         if policy_stable:
+            if verbose == True:
+                print("Policy Iteration")
+                print("------------------------------------------------------")
+                print(f"Value function = {V}")
+                print(f"Optimal Policy = {np.argmax(pi,axis=1)}")
+                print("------------------------------------------------------")
             return V, pi, log
 
 
-def value_iteration():
+def value_iteration(verbose = True):
     num_states = 25
     num_actions = 4
     V = np.zeros(num_states)
@@ -79,7 +82,6 @@ def value_iteration():
     while delta > theta:
         delta = 0
         iters += 1
-        print("New iteration")
         for s in range(num_states):
             v = V[s]
             V_temp = np.zeros(num_actions)
@@ -89,10 +91,14 @@ def value_iteration():
             V[s] = np.max(V_temp)
             pi[s] = np.eye(num_actions)[np.argmax(V_temp)]
             delta = max(delta, np.abs(v-V[s]))
-            print(delta)
-        print('------------')
         log['V'].append(np.mean(V))
         log['iters'].append(iters)
+    if verbose == True:
+        print("Value Iteration")
+        print("------------------------------------------------------")
+        print(f"Value Function = {V}")
+        print(f"Optimal Policy = {np.argmax(pi,axis=1)}")
+        print("------------------------------------------------------")
     return V,pi,log
 
 def epsilon_greedy(Q_state,epsilon):
@@ -102,67 +108,10 @@ def epsilon_greedy(Q_state,epsilon):
         action = np.argmax(Q_state)
     return action
 
-def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
-    num_states = 25
-    num_actions = 4
-    gamma = 0.95
-    Q = np.zeros((num_states,num_actions))
-    pi = np.ones((num_states,num_actions))/num_actions
-    for episode in range(num_epsiodes):
-        s = env.reset()
-        log = {
-        't': [0],
-        's': [],
-        'a': [],
-        'r': [],
-        'V': [],
-        'episodes': []
-    }
-        a = epsilon_greedy(Q[s],epsilon)
-        done = False
-        while not done:
-            (s_new,r,done) = env.step(a)
-            a_new = epsilon_greedy(Q[s_new],epsilon)
-            Q[s,a] += alpha*(r + gamma*Q[s_new,a_new] - Q[s,a])
-            s = s_new
-            a = a_new
-        pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
-        log['V'].append(np.mean(np.max(Q,axis=1)))
-        log['episodes'].append(episode)
-    return Q, pi, log
-        
-def Q_Learning(alpha=0.5,epsilon=0.1,num_epsiodes=1000):
-    num_states = 25
-    num_actions = 4
-    gamma = 0.95
-    Q = np.zeros((num_states,num_actions))
-    pi = np.ones((num_states,num_actions))/num_actions
-    for episode in range(num_epsiodes):
-        s = env.reset()
-        log = {
-        't': [0],
-        's': [],
-        'a': [],
-        'r': [],
-        'V': [],
-        'episodes': []
-    }
-        done = False
-        while not done:
-            a = epsilon_greedy(Q[s],epsilon)
-            (s_new,r,done) = env.step(a)
-            Q[s,a] += alpha*(r + gamma*np.max(Q[s_new]) - Q[s,a])
-            s = s_new
-        pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
-        log['V'].append(np.mean(np.max(Q,axis=1)))
-        log['episodes'].append(episode)
-    return Q, pi, log
-
 def TD_0(pi, alpha=0.5, num_episodes = 1000):
     num_states = 25
     V = np.zeros(num_states)
     gamma = 0.95
-    done = False
     log = {
         't': [0],
         's': [],
@@ -173,6 +122,7 @@ def TD_0(pi, alpha=0.5, num_episodes = 1000):
     }
     for episode in range(num_episodes):
         s = env.reset()
+        done = False
         while not done:
             a = np.argmax(pi[s])
             (s_new,r,done) = env.step(a)
@@ -180,41 +130,170 @@ def TD_0(pi, alpha=0.5, num_episodes = 1000):
             s = s_new
     return V
 
-def main():    
-    #V1, pi1, log = policy_iteration()
-    # V1, pi1, log = value_iteration()
-    Q1,pi1,log = SARSA()
-    Q2,pi2,log2 = Q_Learning()
-    V1 = np.max(Q1,axis=1)
-    print(V1)
-    print("------------------------")
-    V2 = np.max(Q2,axis=1)
-    print(V2)
-    V3 = TD_0(pi1)
-    print(V3)
-    V4 = TD_0(pi2)
-    print(V4)
-    print(np.argmax(pi1,axis=1))
-    print(pi1)
-    print(np.argmax(pi2,axis=1))
-    sp = env.reset()
-    log['s'].append(sp)
-    done = False
-    while not done:
-        a = np.argmax(pi1[sp])
-        (sp, rp, done) = env.step(a)
-        log['t'].append(log['t'][-1] + 1)
-        log['s'].append(sp)
-        log['a'].append(a)
-        log['r'].append(rp)
+def SARSA(alpha=0.5,epsilon=0.1,num_epsiodes=1000,verbose = True):
+    num_states = 25
+    num_actions = 4
+    gamma = 0.95
+    Q = np.zeros((num_states,num_actions))
+    pi = np.ones((num_states,num_actions))/num_actions
+    # V_approx = np.zeros(num_states)
+    log = {
+        't': [0],
+        's': [],
+        'a': [],
+        'r': [],
+        'G': [],
+        'episodes': [],
+        'iters': []
+    }
+    for episode in range(num_epsiodes):
+        s = env.reset()
+        a = epsilon_greedy(Q[s],epsilon)
+        done = False
+        G = 0
+        iters = 0
+        while not done:
+            (s_new,r,done) = env.step(a)
+            iters += 1
+            G += r*gamma**(iters-1)
+            a_new = epsilon_greedy(Q[s_new],epsilon)
+            Q[s,a] += alpha*(r + gamma*Q[s_new,a_new] - Q[s,a])
+            s = s_new
+            a = a_new
+        pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
+        log['G'].append(G)
+        log['episodes'].append(episode)
+    V_approx = TD_0(pi)
+    if verbose == True:
+        print(f"SARSA (Episodes = {num_epsiodes})")
+        print("------------------------------------------------------")
+        print(f"Q function = {Q}")
+        print(f"Value function = {np.max(Q,axis=1)}")
+        print(f"Optimal Policy = {np.argmax(pi,axis=1)}")
+        print(f"Approximate Value function using TD(0) = {V_approx}")
+        print("------------------------------------------------------")
+    return Q, pi, log
+        
+def Q_Learning(alpha=0.5,epsilon=0.1,num_epsiodes=1000,verbose = True):
+    num_states = 25
+    num_actions = 4
+    gamma = 0.95
+    Q = np.zeros((num_states,num_actions))
+    pi = np.ones((num_states,num_actions))/num_actions
+    log = {
+        't': [0],
+        's': [],
+        'a': [],
+        'r': [],
+        'V': [],
+        'G': [],
+        'episodes': [],
+        'iters': []
+    }
+    for episode in range(num_epsiodes):
+        s = env.reset()
+        done = False
+        G = 0
+        iters = 0
+        while not done:
+            a = epsilon_greedy(Q[s],epsilon)
+            (s_new,r,done) = env.step(a)
+            iters += 1
+            G += r*gamma**(iters-1)
+            Q[s,a] += alpha*(r + gamma*np.max(Q[s_new]) - Q[s,a])
+            s = s_new
+        pi[s] = np.eye(num_actions)[np.argmax(Q[s])]
+        log['G'].append(G)
+        log['episodes'].append(episode)
+    V_approx = TD_0(pi)
+    if verbose == True:
+        print(f"Q Learning (Episodes = {num_epsiodes})")
+        print("------------------------------------------------------")
+        print(f"Q function = {Q}")
+        print(f"Value function = {np.max(Q,axis=1)}")
+        print(f"Optimal Policy = {np.argmax(pi,axis=1)}")
+        print(f"Approximate Value function using TD(0) = {V_approx}")
+        print("------------------------------------------------------")
+    return Q, pi, log
 
-    # # Plot data and save to png file
-    # plt.plot(log['t'], log['s'])
-    # plt.plot(log['t'][:-1], log['a'])
-    #plt.plot(log['episodes'], log['V'])
-    # plt.plot(log['t'][:-1], log['r'])
-    # plt.legend(['s', 'a', 'r'])
-    #plt.show()
+
+def main():    
+    V_policyiter, pi_policyiter, log_policyiter = policy_iteration()
+    V_valueiter, pi_valueiter, log_valueiter = value_iteration()
+    Q_sarsa,pi_sarsa,log_sarsa = SARSA()
+    Q_qlearning,pi_qlearning,log_qlearning = Q_Learning()
+    log_list = [log_policyiter,log_valueiter,log_sarsa,log_qlearning]
+    pi_list = [pi_policyiter,pi_valueiter,pi_sarsa,pi_qlearning]
+    algorithms = {0:"Policy Iteration", 1:"Value Iteration", 2:"SARSA",3:"Q-Learning"}
+    for i in range(len(log_list)):
+        sp = env.reset()
+        log_list[i]['s'].append(sp)
+        done = False
+        while not done:
+            a = np.argmax(pi_list[i][sp])
+            (sp, rp, done) = env.step(a)
+            log_list[i]['t'].append(log_list[i]['t'][-1] + 1)
+            log_list[i]['s'].append(sp)
+            log_list[i]['a'].append(a)
+            log_list[i]['r'].append(rp)
+        
+        plt.figure()
+        plt.plot(log_list[i]['t'], log_list[i]['s'])
+        plt.plot(log_list[i]['t'][:-1], log_list[i]['a'])
+        plt.plot(log_list[i]['t'][:-1], log_list[i]['r'])
+        plt.title(f"State, Action and Reward for {algorithms[i]}")
+        plt.xlabel("Time")
+        plt.legend(['s', 'a', 'r'])
+
+        plt.figure()
+        if i < 2:
+            plt.plot(log_list[i]['iters'],log_list[i]['V'])
+            plt.xlabel("Number of Iterations")
+            plt.ylabel("Mean of Value Function")
+            plt.title(f"Learning curve for number of iterations: {algorithms[i]}")
+
+        else:
+            plt.plot(log_list[i]['episodes'],log_list[i]['G'])
+            plt.xlabel("Number of episodes")
+            plt.ylabel("Total return (G)")
+            plt.title(f"Learning curve for number of episodes: {algorithms[i]}")
+
+    for i in range(2):
+        if i == 0:
+            alpha_vals = np.linspace(0,1,11)
+            plt.figure()
+            for alpha in alpha_vals:
+                Q_alpha, pi_alpha, log_alpha = SARSA(alpha=alpha,verbose=False)
+                plt.scatter(log_alpha['episodes'],log_alpha['G'],label=f'Alpha={alpha}')
+                plt.title(f"Learning curve for different alpha: {algorithms[i+2]}")
+            plt.legend()
+
+            epsilon_vals = np.linspace(0,0.5,11)
+            plt.figure()
+            for epsilon in epsilon_vals:
+                Q_eps, pi_eps, log_eps = SARSA(epsilon=epsilon,verbose=False)
+                plt.scatter(log_eps['episodes'],log_eps['G'],label=f'Epsilon={epsilon}')
+                plt.title(f"Learning curve for different epsilon: {algorithms[i+2]}")
+            plt.legend()
+        
+        else:
+            alpha_vals = np.linspace(0,1,11)
+            plt.figure()
+            for alpha in alpha_vals:
+                Q_alpha, pi_alpha, log_alpha = Q_Learning(alpha=alpha,verbose=False)
+                plt.scatter(log_alpha['episodes'],log_alpha['G'],label=f'Alpha={alpha}')
+                plt.title(f"Learning curve for different alpha: {algorithms[i+2]}")
+            plt.legend()
+
+            epsilon_vals = np.linspace(0,0.5,11)
+            plt.figure()
+            for epsilon in epsilon_vals:
+                Q_eps, pi_eps, log_eps = Q_Learning(epsilon=epsilon,verbose=False)
+                plt.scatter(log_eps['episodes'],log_eps['G'],label=f'Epsilon={epsilon}')
+                plt.title(f"Learning curve for different epsilon: {algorithms[i+2]}")
+            plt.legend()
+
+    plt.show()
 
 if __name__ == '__main__':
     main()
